@@ -6,7 +6,7 @@ sections:
   - search
   - filter
   - sort
-  - account_detail_drawer
+  - account_detail
   - payment_actions
   - archived
 ---
@@ -25,7 +25,7 @@ sections:
 
 ## Sort
 
-## Account detail drawer
+## Account detail
 
 ## Payment actions
 

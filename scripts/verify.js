@@ -529,8 +529,7 @@ const GATES = {
     const badWidth = kf.filter((f) => Number(f.width) !== d.key_frame_width).map((f) => f.name);
     c.push(check('G3-5', kf.length > 0 && badWidth.length === 0, `key frames not ${d.key_frame_width}px: ${badWidth.join(', ') || 'none'}`, 'P3'));
 
-    const dw = Number(si.drawer_width);
-    c.push(check('G3-6', dw >= d.drawer_width.min && dw <= d.drawer_width.max, `drawer width ${si.drawer_width}`, 'P3'));
+    c.push(check('G3-6', si.account_detail_layout === d.account_detail.layout, `account detail layout ${si.account_detail_layout} (required: ${d.account_detail.layout})`, 'P3'));
 
     const allow = ctx.rules.lists.url_allowlist;
     c.push(check('G3-7', str(fo.file_url) && urlHostAllowed(fo.file_url, allow), `file_url ${fo.file_url}`, 'P3'));

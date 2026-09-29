@@ -26,10 +26,10 @@ You are the Design Agent for the Receivables Design Harness (stage P3).
 
 Start from `harness/templates/p3-design/`. Front matter exactly as in `gates.md` §B.
 
-- **Key frames (exactly 3, width 1440):** Payments Due default queue · Filtered or saved queue view · Account detail drawer.
+- **Key frames (exactly 3, width 1440):** Payments Due default queue · Filtered or saved queue view · Account detail (full view in the main content area, not a drawer).
 - **States (exactly 7):** Create payment link · Send reminder · Archive confirmation · Archived result and restore · Loading · Empty queue · No results. Each may be a frame, a component variant or a named section.
 - All 10 names appear in both `screen-inventory.md` and `figma-output.md` `frames` (with `node_id` and destination `url`).
-- Drawer width 440–520px.
+- `account_detail_layout: full_view` in screen-inventory.md. Payment link, reminder and archive confirmation are centred modals (content-driven height).
 - `accounts_shown` uses only `references/sample-data.md` accounts, covering `multiple_invoices`, `no_payment_link`, `link_sent_unpaid`, `sensitive_account`. `total` equals the sum of `invoice_amounts` and matches sample-data exactly.
 - `component-states.md`: 4 main actions (Create payment link, Send reminder, Archive from queue, Restore) × Default/Loading/Success/Error; `badges` with family, text label and token.
 - `figma-output.md` `ui_copy`: every visible text string, by frame.

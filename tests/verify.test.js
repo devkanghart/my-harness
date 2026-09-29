@@ -17,7 +17,7 @@ const SCRIPT = path.join(PROJECT, 'scripts', 'verify.js');
 const RUN = 'runs/test-run';
 const DEST = 'DESTKEY456';
 
-const KEY_FRAMES = ['Payments Due default queue', 'Filtered or saved queue view', 'Account detail drawer'];
+const KEY_FRAMES = ['Payments Due default queue', 'Filtered or saved queue view', 'Account detail'];
 const STATES = ['Create payment link', 'Send reminder', 'Archive confirmation', 'Archived result and restore', 'Loading', 'Empty queue', 'No results'];
 const NAMED = [...KEY_FRAMES, ...STATES];
 const ACTIONS = ['Create payment link', 'Send reminder', 'Archive from queue', 'Restore'];
@@ -73,8 +73,8 @@ function validRun() {
     'p3-design/design-concept.md': { business_rules_used: ['BR-01'] },
     'p3-design/screen-inventory.md': {
       key_frames: KEY_FRAMES.map((name) => ({ name, width: 1440 })),
-      states: STATES.map((name) => ({ name, type: 'state', parent_frame: 'Account detail drawer' })),
-      drawer_width: 480,
+      states: STATES.map((name) => ({ name, type: 'state', parent_frame: 'Account detail' })),
+      account_detail_layout: 'full_view',
       accounts_shown: [
         { client: 'Amara Lewis', pets: ['Pixel'], scenario: 'link_sent_unpaid', workflow_status: 'active', total: '£486.50', invoice_amounts: ['£186.50', '£220.00', '£80.00'] },
         { client: 'Theo Bennett', pets: ['Miso', 'Nori'], scenario: 'sensitive_account', workflow_status: 'active', total: 1284.0, invoice_amounts: [540, 264, 360, 120] },
@@ -99,7 +99,7 @@ function validRun() {
       frames: NAMED.map((name, i) => ({ name, node_id: `1:${i + 1}`, url: frameUrl(i + 1) })),
       ui_copy: [
         { frame: 'Payments Due default queue', text: 'Search client, pet or invoice' },
-        { frame: 'Account detail drawer', text: 'INV-10428 · £186.50 · Overdue' },
+        { frame: 'Account detail', text: 'INV-10428 · £186.50 · Overdue' },
         { frame: 'Archive confirmation', text: 'It does not change the invoices, amounts owed or payment status.' },
       ],
     },
@@ -245,6 +245,15 @@ test('G2 fails when a label appears in two status families → P2', () => {
   const { code, json } = verify(root, 'G2');
   assert.equal(code, 1);
   assert.equal(json.return_stage, 'P2');
+});
+
+test('G3 fails when account detail is not a full view → P3', () => {
+  const root = makeFixture(({ run }) => {
+    run['p3-design/screen-inventory.md'].account_detail_layout = 'drawer';
+  });
+  const { code, json } = verify(root, 'G3');
+  assert.equal(code, 1);
+  assert.equal(json.return_stage, 'P3');
 });
 
 test('G3 fails when a key frame is not 1440px → P3', () => {

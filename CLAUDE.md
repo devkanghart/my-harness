@@ -28,7 +28,7 @@ All 16 outputs start with YAML front matter (schema: `gates.md` §B; templates: 
 ## 4. Gates
 G1 → G2 → G3 → G4 → G5 via `node scripts/verify.js --run runs/<slug> --gate G<n>` (exit 0 pass · 1 fail · 2 halt). verify.js reads front matter and file existence only; it never edits files.
 
-Key numbers: 3 key frames at 1440px + 7 states = 10 · drawer 440–520px · 4 main actions × 4 states · Critical 12 AC + 5 service conditions, Fail = 0 in each group · total − invoice sum = £0.00 · unapproved BR = 0 · Figma destination key matches state.json.
+Key numbers: 3 key frames at 1440px + 7 states = 10 · account detail as full view (not a drawer) · 4 main actions × 4 states · Critical 12 AC + 5 service conditions, Fail = 0 in each group · total − invoice sum = £0.00 · unapproved BR = 0 · Figma destination key matches state.json.
 
 Data-safety checks: `accounts_shown` client/pets ∈ sample-data names · `ui_copy` has no email, phone, judgemental or AI phrases, or company names from `harness/company-blocklist.local.txt` (missing file → Halt) · only Northstar Care as company; Payment Portal / Payments Due / Receivables Workspace allowed · identifiers matching `[A-Z]{2,}-\d+` ∈ sample-data invoice numbers · qa-report `data_safety_review` = Pass with evidence (qa-gatekeeper judgement, not a Human Approval).
 

@@ -133,11 +133,11 @@ workflow:
       must_be_unchanged: [financial_status, amount_outstanding]
 
 design:
-  key_frames: [Payments Due default queue, Filtered or saved queue view, Account detail drawer]
+  key_frames: [Payments Due default queue, Filtered or saved queue view, Account detail]
   key_frame_width: 1440
   states: [Create payment link, Send reminder, Archive confirmation, Archived result and restore, Loading, Empty queue, No results]
   total_named_states: 10
-  drawer_width: { min: 440, max: 520 }
+  account_detail: { frame: Account detail, layout: full_view }   # D-15: full view replaces the 440–520px drawer
   account_scenarios: [multiple_invoices, no_payment_link, link_sent_unpaid, sensitive_account]
   main_actions: [Create payment link, Send reminder, Archive from queue, Restore]
   action_states: [Default, Loading, Success, Error]

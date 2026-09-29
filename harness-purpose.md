@@ -74,12 +74,12 @@ Includes Figma generation and the handoff package.
 
 | Type | Count | Items |
 |---|---|---|
-| Key screen frame | exactly 3 | Payments Due default queue; Filtered or saved queue view; Account detail drawer |
+| Key screen frame | exactly 3 | Payments Due default queue; Filtered or saved queue view; Account detail |
 | Interaction/state coverage | exactly 7 | Create payment link; Send reminder; Archive confirmation; Archived result and restore; Loading; Empty queue; No results |
 | Total required named design states | 10 | Traceable in both `screen-inventory.md` and `figma-output.md` |
 
 - Key frame width: 1440px.
-- Account drawer width: 440–520px (`references/design.md`).
+- Account detail: full view in the main content area, not a drawer (D-15, human design review 29 Sep 2026; was a 440–520px drawer).
 - Each of the 7 states may be an independent frame, a component variant or a clearly named section.
 
 ### Account scenarios shown inside the 3 key frames (checked in R5 Gate 3)

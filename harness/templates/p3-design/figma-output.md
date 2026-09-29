@@ -6,7 +6,7 @@ file_url: ""
 frames:
   - { name: Payments Due default queue, node_id: "", url: "" }
   - { name: Filtered or saved queue view, node_id: "", url: "" }
-  - { name: Account detail drawer, node_id: "", url: "" }
+  - { name: Account detail, node_id: "", url: "" }
   - { name: Create payment link, node_id: "", url: "" }
   - { name: Send reminder, node_id: "", url: "" }
   - { name: Archive confirmation, node_id: "", url: "" }

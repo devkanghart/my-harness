@@ -2,7 +2,7 @@
 screens:                                 # all 10 named states, each with its destination Figma link
   - { name: Payments Due default queue, figma_url: "" }
   - { name: Filtered or saved queue view, figma_url: "" }
-  - { name: Account detail drawer, figma_url: "" }
+  - { name: Account detail, figma_url: "" }
   - { name: Create payment link, figma_url: "" }
   - { name: Send reminder, figma_url: "" }
   - { name: Archive confirmation, figma_url: "" }
