@@ -4,7 +4,7 @@
   "private": true,
   "description": "Gate checker for the Receivables Design Harness (see CLAUDE.md).",
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.js",
     "verify": "node scripts/verify.js"
   },
   "dependencies": {
