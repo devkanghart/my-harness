@@ -1,0 +1,274 @@
+# Receivables Design Harness — rules SSOT
+# Approved in interview rounds R2–R8. Specs: harness-purpose.md, pipeline.md, artifacts.md, gates.md, roles.md.
+# scripts/verify.js reads every threshold and list from this file. Agents never edit it during a run.
+
+version: 1
+
+paths:
+  references_dir: references/
+  run_dir: runs/<slug>/
+  inputs_dir: runs/<slug>/inputs/
+  state_file: runs/<slug>/state.json
+  templates_dir: harness/templates/
+  company_blocklist_file: harness/company-blocklist.local.txt   # real names live only there (git-ignored)
+
+reference_documents:          # exactly 6, read-only for every agent
+  - references/PRD.md
+  - references/design.md
+  - references/story-service.md
+  - references/story-work.md
+  - references/acceptance-criteria.md
+  - references/sample-data.md
+
+change_inputs:
+  min_files: 1
+  groups:
+    A: [uat_feedback, stakeholder_requirement]
+    B: [ux_problem, screen_or_interaction_to_revise]
+    C: [technical_constraint, unresolved_question, figma_reference]
+  optional_references: [uibowl_reference, figma_reference]
+
+stages:                       # strictly sequential, no parallelism between stages
+  - id: P1
+    name: Evidence and Requirements
+    agent: evidence-agent
+    required_inputs: [references/**, runs/<slug>/inputs/**]
+    required_outputs:
+      - p1-evidence/evidence-summary.md
+      - p1-evidence/requirements.md
+      - p1-evidence/open-questions.md
+    gate: G1
+  - id: P2
+    name: Workflow and State Model
+    agent: workflow-agent
+    required_inputs: [p1-evidence/*, references/**, runs/<slug>/inputs/**]
+    required_outputs:
+      - p2-workflow/information-architecture.md
+      - p2-workflow/user-flow.md
+      - p2-workflow/state-model.md
+    gate: G2
+    human_approval: true
+  - id: P3
+    name: Design Concept
+    agent: design-agent
+    required_inputs: [p2-workflow/*, references/**, runs/<slug>/inputs/**]
+    optional_inputs: [allowed_uibowl_reference, figma_reference]
+    required_outputs:
+      - p3-design/design-concept.md
+      - p3-design/screen-inventory.md
+      - p3-design/component-states.md
+      - p3-design/figma-output.md
+    gate: G3
+  - id: P4
+    name: Validation
+    agent: qa-gatekeeper
+    required_inputs: [p1-evidence/*, p2-workflow/*, p3-design/*, references/**, runs/<slug>/inputs/**, runs/<slug>/state.json]
+    required_outputs:
+      - p4-validation/qa-report.md
+      - p4-validation/failed-criteria.md
+      - p4-validation/revision-log.md
+    gate: G4
+    internal_parallel: [automated_checks, human_review_list]
+  - id: P5
+    name: Handoff
+    agent: handoff-agent
+    required_inputs: [p1-evidence/*, p2-workflow/*, p3-design/*, p4-validation/*, references/**, runs/<slug>/inputs/**, runs/<slug>/state.json]
+    required_outputs:
+      - p5-handoff/handoff.md
+      - p5-handoff/implementation-notes.md
+      - p5-handoff/unresolved-questions.md
+    gate: G5
+
+human_approval_gate:
+  count: 1
+  after_gate: G2
+  approves:
+    - p2-workflow/information-architecture.md
+    - p2-workflow/user-flow.md
+    - p2-workflow/state-model.md      # incl. approved_business_rules
+  re_pass_allowed: true
+  block_next_stage_until_approved: true
+
+business_rules:
+  id_pattern: "^BR-\\d{2}$"
+  approved_list: { file: p2-workflow/state-model.md, key: approved_business_rules, fields: [id, rule, source] }
+  used_list_key: business_rules_used
+  used_in:
+    - p3-design/design-concept.md
+    - p3-design/screen-inventory.md
+    - p5-handoff/handoff.md
+    - p5-handoff/implementation-notes.md
+  max_unapproved: 0
+  natural_language_rule_without_id: forbidden
+  on_unapproved: P2
+
+requirements:
+  labels: [E, H, C, U]          # Evidence, Hypothesis, Conflict, Unknown
+  labels_requiring_open_question: [C, U]
+  evidence_label: E
+  min_sources_for_evidence: 1
+  redaction_tokens: ["[client]", "[clinic]", "[redacted]"]
+
+workflow:
+  required_objects: [account, invoice]
+  invoice_required_field: account_id
+  required_ia_sections: [search, filter, sort]   # each exactly once
+  status_families:
+    financial: [Due, Overdue, Paid, Cancelled]
+    payment_activity: [No payment link, Payment link created, Payment link sent, Payment link expired, Reminder sent, Payment confirmed]
+    workflow: [Active in Payments Due, Archived from queue]
+  transition_checks:            # P2 layer; failure → P2
+    sensitive_reminder:         # service condition c
+      action: send_reminder
+      applies_to: sensitive
+      pass_if_any: [{ requires: note_reviewed }, { shows: sensitivity_notice }]
+    keep_in_queue:              # service condition d + R1-A rule 2
+      actions: [link_created, link_sent, reminder_sent]
+      must_be_unchanged: [workflow_status, financial_status]
+    leave_queue_on_payment:     # service condition e
+      action: payment_confirmed
+      must_set: { in_active_queue: false }
+    archive_is_not_financial:   # R1-A rule 1
+      actions: [archive, restore]
+      must_be_unchanged: [financial_status, amount_outstanding]
+
+design:
+  key_frames: [Payments Due default queue, Filtered or saved queue view, Account detail drawer]
+  key_frame_width: 1440
+  states: [Create payment link, Send reminder, Archive confirmation, Archived result and restore, Loading, Empty queue, No results]
+  total_named_states: 10
+  drawer_width: { min: 440, max: 520 }
+  account_scenarios: [multiple_invoices, no_payment_link, link_sent_unpaid, sensitive_account]
+  main_actions: [Create payment link, Send reminder, Archive from queue, Restore]
+  action_states: [Default, Loading, Success, Error]
+  badge_families: [financial, payment_activity, workflow, category, sensitivity]
+  status_badge_families: [financial, payment_activity, workflow]
+  forbidden_status_mappings:
+    - payment_activity_value_as_financial_status
+    - archived_from_queue_as_financial_status
+    - paid_or_success_outside_payment_confirmed
+  paid_language_allowed_labels: [Paid, Payment confirmed]   # Paid only in financial family
+  success_token_markers: [green, success]
+  archived_labels: [Archived from queue, Archived]
+
+qa:
+  critical_acceptance_ids: [CAC-01, CAC-02, CAC-03, CAC-04, CAC-05, CAC-06, CAC-07, CAC-08, CAC-09, CAC-10, CAC-11, CAC-12]
+  critical_acceptance:
+    CAC-01: Each row represents a client account, while preserving access to individual invoices.
+    CAC-02: Total outstanding reconciles with the displayed outstanding invoices.
+    CAC-03: Payment-link and reminder history are distinguishable from invoice status.
+    CAC-04: Any priority treatment exposes its rule and does not imply an undisclosed AI decision.
+    CAC-05: Create-link and send-reminder actions prevent duplicate submission while loading.
+    CAC-06: Completion feedback describes the action taken without implying payment.
+    CAC-07: Archive from queue requires confirmation.
+    CAC-08: Archive copy explicitly states that invoice and payment status will not change.
+    CAC-09: An archived account can be restored to the active queue.
+    CAC-10: Confirmed payment is the only state that uses payment-success language.
+    CAC-11: Status is not communicated by colour alone.
+    CAC-12: Every business rule used in P3 and P5 exists in P2 Approved business rules (unapproved = 0).
+  critical_service_condition_ids: [a, b, c, d, e]
+  critical_service_conditions:
+    a: No judgemental phrases in UI copy.
+    b: Archived state never uses a green or success token.
+    c: Sensitive account reminder requires note review or shows the sensitivity notice.
+    d: Link creation or reminder never removes an unconfirmed account from the active queue.
+    e: A payment-confirmed account never remains in the active Payments Due queue.
+  standard_count: 28
+  needs_human_review_count: 4   # Final review questions 1–4; never auto-Pass, never an approval gate
+  verdicts: [Pass, Fail]
+  data_safety_review: { key: data_safety_review, pass_if: "verdict == Pass and evidence non-empty", on_fail: P3 }
+
+lists:
+  judgemental_phrases: { values: [bad payer, problem client, high risk], match: ci_exact_phrase, scope: figma-output.ui_copy }
+  ai_phrases: { values: [AI score, risk score, priority score, AI recommendation], match: ci_exact_phrase, scope: figma-output.ui_copy }
+  name_allowlist: { source: references/sample-data.md, scope: [screen-inventory.accounts_shown.client, screen-inventory.accounts_shown.pets] }
+  company_allowlist: [Northstar Care]
+  company_blocklist: { file: harness/company-blocklist.local.txt, match: ci_exact_phrase, scope: figma-output.ui_copy, on_missing: halt }
+  allowed_product_names: [Payment Portal, Payments Due, Receivables Workspace]
+  identifier_pattern: "[A-Z]{2,}-\\d+"
+  identifier_allowlist: [INV-10428, INV-10802, INV-11176, INV-09771, INV-10108, INV-10556, INV-10993]
+  pii_patterns: { values: [email, phone], scope: figma-output.ui_copy, phone_min_digits: 9 }
+  url_allowlist: [figma.com]     # host or subdomain; checked in all front matter
+
+return_rules:                 # exactly one return stage per failure; earliest wins
+  order: [P1, P2, P3, P4, P5]
+  missing_evidence_or_source: P1
+  object_status_workflow_definition_error: P2
+  unapproved_business_rule: P2
+  value_transfer_error: P3
+  screen_component_interaction_below_criteria: P3
+  unlisted_identifier_or_data_safety_fail: P3
+  critical_judgement_without_evidence: P3
+  g5:                         # explicit mapping, no natural-language judgement
+    handoff_file_missing: P5
+    unresolved_question_without_owner_or_next_step: P5
+    screen_without_figma_link: P3
+    action_without_interaction_rule: P3
+    critical_qa_fail: g4_recorded_return_stage
+    unapproved_business_rule: P2
+
+retries:
+  max_auto_fix_per_gate: 2
+  on_exceeded: halt
+  reset: only_on_explicit_human_resume_after_halt   # logged in return_history
+
+halt_conditions:              # not Human Approval Gates
+  - rules_hash_changed
+  - state_json_corrupted_or_missing_key
+  - change_inputs_zero
+  - auto_fix_limit_exceeded
+  - edit_scope_violation
+  - figma_destination_cannot_be_created
+  - figma_destination_change_requested
+  - figma_destination_null_at_G3
+  - run_folder_missing_or_inputs_empty_at_trigger
+  - company_blocklist_file_missing
+  - verify_exit_code_2
+
+resume:
+  source_of_truth: state.json
+  required_state_keys:
+    [slug, current_stage, last_passed_gate, failure_count, human_approval,
+     generated_files, change_inputs, return_history, input_hashes, rules_hash,
+     figma_destination]
+  on_reference_hash_change: restart_P1
+  on_inputs_hash_change: restart_P1_and_log_return_history
+  on_p2_hash_mismatch: revoke_approval_and_wait_at_P2_gate
+  on_rules_hash_change: halt_and_ask_restart_point
+
+scope_check:                  # run by the Orchestrator around every subagent call
+  before_agent: record hashes of all files outside the agent's editable scope
+  after_agent: recompute the same hashes
+  watched: [references/**, runs/<slug>/inputs/**, runs/<slug>/state.json, other stage folders]
+  exception: orchestrator_state_json_updates
+  on_violation: halt_and_log_return_history   # path, agent, hash_before, hash_after
+  generated_files_update: after_revision_log_records_changes
+
+figma_destination:
+  file_name: "Receivables Workspace - <slug>"
+  created_by: design-agent
+  registered_by: orchestrator
+  null_allowed_until_registered: true
+  immutable_within_run: true
+  on_change_request: halt
+  on_create_failure: halt_and_ask_empty_file_url   # source: user_provided
+  never_edit: [company payment portal original, company design system original, inputs/ Figma references]
+
+retention:
+  overwrite_on_retry: true
+  snapshots: false
+  revision_log_fields: [attempt, failed_gate, failure_reason, return_stage, changed_files, action]
+  changed_files_fields: [path, before_hash, after_hash, changed_by, gate_or_stage]
+
+agents:                       # details: roles.md; max 1 editable folder each
+  orchestrator: { runs_as: main_session_skill, skill: .claude/skills/receivables-harness/SKILL.md, editable: runs/<slug>/state.json }
+  evidence-agent: { stage: P1, editable: runs/<slug>/p1-evidence/, figma_write: false }
+  workflow-agent: { stage: P2, editable: runs/<slug>/p2-workflow/, figma_write: false }
+  design-agent: { stage: P3, editable: runs/<slug>/p3-design/, figma_write: destination_only }
+  qa-gatekeeper: { stage: P4, editable: runs/<slug>/p4-validation/, figma_write: false }
+  handoff-agent: { stage: P5, editable: runs/<slug>/p5-handoff/, figma_write: false }
+
+forbidden_edits:
+  - references/**             # all agents
+  - harness/**                # all agents during a run
+  - runs/<slug>/inputs/**     # after the run starts

@@ -1,0 +1,17 @@
+{
+  "slug": "",
+  "current_stage": "P1",
+  "last_passed_gate": null,
+  "failure_count": { "G1": 0, "G2": 0, "G3": 0, "G4": 0, "G5": 0 },
+  "human_approval": {
+    "status": "pending",
+    "approved_at": null,
+    "approved_file_hashes": {}
+  },
+  "generated_files": [],
+  "change_inputs": [],
+  "return_history": [],
+  "input_hashes": {},
+  "rules_hash": "",
+  "figma_destination": null
+}
